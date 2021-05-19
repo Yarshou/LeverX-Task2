@@ -6,16 +6,16 @@ from re import sub
 class Version:
 
     def __init__(self, version):
+        self.TO_REPLACE = {"alpha": 0, "beta": 1, "a": 0, "b": 1, "rc": 2}
         self.version = self._convert(version)
         self.split_ver = self.version.split(".")
 
     def _convert(self, version):
 
-        to_replace = [("alpha", ".0."), ("beta", ".1."), ("rc", ".2."), ("a", ".0."), ("b", ".1.")]
         version = version.replace("-", ".")
 
-        for value in to_replace:
-            version = version.replace(*value)
+        for value in self.TO_REPLACE.items():
+            version = version.replace(value[0], f".{value[1]}.")
 
         result = sub(r"\.+", ".", version)
         return sub(r"\.$", "", result)
@@ -23,13 +23,21 @@ class Version:
     def __lt__(self, other):
         for i in range(len(self.split_ver)):
             if len(other.split_ver) - 1 < i:
+                tmp = int(self.split_ver[len(other.split_ver)])
+                if tmp in set(self.TO_REPLACE.values()):
+                    return True
+                else:
+                    return False
+            elif int(self.split_ver[i]) > int(other.split_ver[i]):
                 return False
-            elif self.split_ver[i] > other.split_ver[i]:
-                return False
-            elif self.split_ver[i] < other.split_ver[i]:
+            elif int(self.split_ver[i]) < int(other.split_ver[i]):
                 return True
         if len(self.split_ver) < len(other.split_ver):
-            return True
+            tmp = int(other.split_ver[len(self.split_ver)])
+            if tmp not in set(self.TO_REPLACE.values()):
+                return True
+            else:
+                return False
         return False
 
     def __eq__(self, other):
